@@ -1,0 +1,37 @@
+{
+  "projectType": "api-service",
+  "projectName": "Eventos API",
+  "projectDescription": "A lightweight Node.js/Express REST API that serves event participant data from a PostgreSQL database.",
+  "theme": "sequoia",
+  "primaryColor": "#2563EB",
+  "lightColor": "#3B82F6",
+  "darkColor": "#1D4ED8",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          { "group": "Get Started", "pages": ["introduction", "quickstart"] },
+          { "group": "Configuration", "pages": ["configuration/environment", "configuration/database", "configuration/cors"] },
+          { "group": "Guides", "pages": ["guides/deployment", "guides/error-handling"] }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          { "group": "Endpoints", "pages": ["api-reference/overview", "api-reference/participants"] }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "REST API built with Express.js",
+    "PostgreSQL integration via pg pool with SSL",
+    "CORS restricted to trusted frontend origin",
+    "Environment-based configuration via dotenv",
+    "Single endpoint to retrieve event participants"
+  ],
+  "publicApiSurface": [
+    "GET /lista — Returns all rows from the Prueba (participants) table"
+  ]
+}
