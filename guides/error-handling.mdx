@@ -1,0 +1,163 @@
+---
+title: Error handling
+description: Understand how the Eventos API handles errors and how to diagnose common issues.
+---
+
+The Eventos API uses a simple try/catch strategy for error handling. This page explains the behavior of the `/lista` endpoint and how to diagnose the most common failure scenarios.
+
+## How `/lista` handles errors
+
+The `/lista` endpoint wraps its database query in a `try/catch` block:
+
+```javascript
+app.get('/lista', async(req, res) => {
+    try {
+        const getParticipantsQuery = 'SELECT * FROM Prueba';
+        const participants = await pool.query(getParticipantsQuery);
+
+        return res.status(200).json(participants.rows);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+```
+
+**On success** — returns HTTP `200` with the query results as a JSON array:
+
+```json
+[
+  { "id": 1, "nombre": "Ana", "evento": "Conferencia" },
+  { "id": 2, "nombre": "Luis", "evento": "Taller" }
+]
+```
+
+**On error** — logs the full error object to `console.error` (visible in your platform's log output) and returns HTTP `500`:
+
+```json
+{ "error": "Error en el servidor" }
+```
+
+<Note>
+  The error message returned to the client is intentionally generic. The full error details are only written to server logs via `console.error`. Check your platform logs (e.g., `heroku logs --tail` or Railway's log viewer) to see the actual error.
+</Note>
+
+## Common error scenarios
+
+<AccordionGroup>
+  <Accordion title="Database connection failure">
+    **Description:** The API cannot establish a connection to PostgreSQL.
+
+    **Symptoms:**
+    - `GET /lista` returns HTTP `500` with `{ "error": "Error en el servidor" }`
+    - Server logs show a message such as `ECONNREFUSED`, `ETIMEDOUT`, or `SSL SYSCALL error`
+
+    **Common causes and fixes:**
+
+    - **Wrong `DATABASE_URL`** — Verify the connection string is correctly set in your platform's environment variables. It should follow the format:
+      ```
+      postgresql://user:password@host:port/database
+      ```
+    - **Network issues** — Ensure your database host is reachable from your deployment environment. Cloud databases often restrict inbound connections by IP.
+    - **SSL mismatch** — The `pg.Pool` is configured with `ssl: true`. If your database does not require SSL, this will cause a handshake failure. Most cloud providers (Heroku Postgres, Railway) do require SSL, so this setting should be left as-is for production deployments.
+  </Accordion>
+
+  <Accordion title="Table not found">
+    **Description:** The `Prueba` table does not exist in the connected database.
+
+    **Symptoms:**
+    - `GET /lista` returns HTTP `500`
+    - Server logs show a PostgreSQL error: `relation "prueba" does not exist`
+
+    **How to fix:**
+
+    Connect to your database and create the table. The exact schema depends on your application requirements. For example:
+
+    ```sql
+    CREATE TABLE Prueba (
+      id SERIAL PRIMARY KEY,
+      nombre VARCHAR(255),
+      evento VARCHAR(255)
+    );
+    ```
+
+    If you are using a fresh Heroku Postgres or Railway database, the schema must be applied manually after provisioning — it is not created automatically.
+  </Accordion>
+
+  <Accordion title="CORS error">
+    **Description:** A browser-based client is making a request from an origin other than `https://eventosutmach.000webhostapp.com`.
+
+    **Symptoms:**
+    - The request does not return a `500`. Instead, the browser blocks the response entirely.
+    - Browser DevTools shows a CORS error such as:
+      ```
+      Access to XMLHttpRequest at 'https://your-api.com/lista' from origin
+      'https://other-origin.com' has been blocked by CORS policy.
+      ```
+
+    **How it works in the code:**
+
+    ```javascript
+    const allowedOrigin = 'https://eventosutmach.000webhostapp.com';
+    app.use(cors({ origin: allowedOrigin }));
+    ```
+
+    Only requests originating from `https://eventosutmach.000webhostapp.com` are permitted by the CORS policy.
+
+    **How to fix:**
+
+    If you need to allow additional origins (e.g., during local development), update `allowedOrigin` to accept an array:
+
+    ```javascript
+    const allowedOrigins = [
+      'https://eventosutmach.000webhostapp.com',
+      'http://localhost:3000'
+    ];
+    app.use(cors({
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      }
+    }));
+    ```
+
+    <Warning>
+      Do not set `origin: '*'` in production. This disables CORS protection entirely and allows any website to call your API.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Port conflict">
+    **Description:** Another process is already listening on the port the API is trying to bind to.
+
+    **Symptoms:**
+    - The server fails to start.
+    - Terminal or logs show: `Error: listen EADDRINUSE: address already in use :::3000`
+
+    **How to fix:**
+
+    The API reads the port from the `PORT` environment variable and defaults to `3000`:
+
+    ```javascript
+    const port = process.env.PORT || 3000;
+    ```
+
+    To resolve the conflict locally, either:
+
+    - Stop the process using port `3000`:
+      ```bash
+      # Find the process
+      lsof -i :3000
+      # Kill it by PID
+      kill -9 <PID>
+      ```
+    - Or start the API on a different port:
+      ```bash
+      PORT=4000 node index.js
+      ```
+
+    On cloud platforms, `PORT` is assigned automatically and conflicts are not expected.
+  </Accordion>
+</AccordionGroup>

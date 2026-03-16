@@ -1,0 +1,133 @@
+---
+title: Deployment
+description: Deploy the Eventos API to cloud platforms like Heroku or Railway.
+---
+
+The Eventos API is a Node.js/Express application backed by PostgreSQL. This guide walks through deploying it to two common cloud platforms.
+
+<Note>
+  SSL is hardcoded to `true` in the `pg.Pool` configuration. This is required by most cloud PostgreSQL providers (including Heroku Postgres and Railway). Do not disable it in production.
+</Note>
+
+## Environment variables
+
+Regardless of which platform you use, the following environment variables must be configured:
+
+| Variable | Description | Default |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string | — |
+| `PORT` | Port the server listens on | `3000` |
+
+Most platforms set `PORT` automatically. `DATABASE_URL` is typically provided by the platform's managed PostgreSQL add-on or plugin.
+
+## Platforms
+
+<Tabs>
+  <Tab title="Heroku">
+    Heroku provides a managed Postgres add-on and sets `DATABASE_URL` automatically.
+
+    **Prerequisites:** A [Heroku account](https://heroku.com) and Git initialized in your project.
+
+    <Steps>
+      <Step title="Install the Heroku CLI">
+        Download and install the [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli), then log in:
+
+        ```bash
+        heroku login
+        ```
+      </Step>
+
+      <Step title="Create a Heroku app">
+        Run this from your project root:
+
+        ```bash
+        heroku create
+        ```
+
+        Heroku assigns a generated app name and a `git remote` named `heroku`.
+      </Step>
+
+      <Step title="Add the Heroku Postgres add-on">
+        Provision a PostgreSQL database using the `mini` plan (free tier):
+
+        ```bash
+        heroku addons:create heroku-postgresql:mini
+        ```
+
+        Heroku automatically sets the `DATABASE_URL` environment variable on your app. No manual configuration is needed.
+      </Step>
+
+      <Step title="Deploy the application">
+        Push your code to Heroku:
+
+        ```bash
+        git push heroku main
+        ```
+
+        Heroku detects the Node.js runtime, installs dependencies, and starts the server using the `start` script from `package.json`:
+
+        ```json
+        "scripts": {
+          "start": "node index.js"
+        }
+        ```
+      </Step>
+
+      <Step title="Verify the deployment">
+        Open the live app in your browser:
+
+        ```bash
+        heroku open
+        ```
+
+        Or check the logs if something went wrong:
+
+        ```bash
+        heroku logs --tail
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="Railway">
+    Railway provides automatic deployments from GitHub and a built-in PostgreSQL plugin.
+
+    **Prerequisites:** A [Railway account](https://railway.app) and your project pushed to a GitHub repository.
+
+    <Steps>
+      <Step title="Create a new project">
+        Log in to [railway.app](https://railway.app) and click **New Project**. Select **Deploy from GitHub repo** and authorize Railway to access your repository.
+      </Step>
+
+      <Step title="Connect your GitHub repository">
+        Search for and select the repository containing your Eventos API. Railway will detect the Node.js project automatically.
+      </Step>
+
+      <Step title="Add the PostgreSQL plugin">
+        Inside your project on Railway, click **New** → **Database** → **Add PostgreSQL**.
+
+        Railway provisions a managed PostgreSQL instance and makes its connection details available as environment variables within the project.
+      </Step>
+
+      <Step title="Set the DATABASE_URL variable">
+        Navigate to your service's **Variables** tab. Add a new variable:
+
+        ```
+        DATABASE_URL = ${{Postgres.DATABASE_URL}}
+        ```
+
+        This references the connection string exposed by the PostgreSQL plugin using Railway's [variable references](https://docs.railway.app/guides/variables#referencing-another-services-variable).
+      </Step>
+
+      <Step title="Deploy">
+        Railway triggers a deployment automatically whenever you push to your connected branch. You can also trigger a manual deploy from the Railway dashboard.
+
+        Once deployed, Railway assigns a public URL to your service. You can find it under the **Settings** → **Networking** tab.
+      </Step>
+    </Steps>
+
+    <Tip>
+      Railway sets `PORT` automatically via the `$PORT` environment variable. The Eventos API already falls back to `3000` if `PORT` is not set, so no additional configuration is required.
+    </Tip>
+  </Tab>
+</Tabs>

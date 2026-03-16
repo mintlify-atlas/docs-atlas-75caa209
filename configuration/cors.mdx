@@ -1,0 +1,62 @@
+---
+title: CORS configuration
+description: Cross-origin resource sharing settings for the Eventos API.
+---
+
+Cross-Origin Resource Sharing (CORS) is a browser security mechanism that restricts web pages from making requests to a domain different from the one that served the page.
+
+The Eventos API uses the [`cors`](https://github.com/expressjs/cors) npm package to control which origins browsers are permitted to send requests from.
+
+## Configuration
+
+The allowed origin is hardcoded in `index.js`:
+
+```javascript
+const allowedOrigin = 'https://eventosutmach.000webhostapp.com';
+app.use(cors({ origin: allowedOrigin }));
+```
+
+Only requests originating from `https://eventosutmach.000webhostapp.com` will receive the `Access-Control-Allow-Origin` response header. Browsers block responses from other origins.
+
+## Scope of enforcement
+
+CORS restrictions are enforced **by the browser only**. The following are unaffected:
+
+- `curl` and other command-line HTTP clients
+- Server-to-server requests (e.g. from a backend or cron job)
+- Postman and similar API testing tools
+
+Only browser-based JavaScript (e.g. `fetch`, `XMLHttpRequest`) is subject to the CORS policy.
+
+<Warning>
+  Changing the allowed origin requires modifying the `allowedOrigin` constant in `index.js` and redeploying the application. There is no runtime configuration option for this value.
+</Warning>
+
+<Tip>
+  If you need to allow multiple origins in the future, you can pass an array or a function to the `origin` option:
+
+  ```javascript
+  // Allow multiple specific origins
+  const allowedOrigins = [
+    'https://eventosutmach.000webhostapp.com',
+    'https://myother-frontend.com',
+  ];
+  app.use(cors({ origin: allowedOrigins }));
+
+  // Or use a regex to match a pattern
+  app.use(cors({ origin: /\.eventosutmach\.com$/ }));
+
+  // Or allow all origins (development only — not recommended for production)
+  app.use(cors());
+  ```
+</Tip>
+
+## CORS headers
+
+When a request comes from the allowed origin, the `cors` middleware adds the following response header:
+
+```
+Access-Control-Allow-Origin: https://eventosutmach.000webhostapp.com
+```
+
+No additional CORS headers (e.g. `Access-Control-Allow-Credentials`, `Access-Control-Allow-Methods`) are configured, so the defaults apply: simple GET and POST requests are permitted without a preflight.

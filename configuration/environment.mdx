@@ -1,0 +1,60 @@
+---
+title: Environment variables
+description: Configure the Eventos API using environment variables loaded via dotenv.
+---
+
+The Eventos API uses [dotenv](https://github.com/motdotla/dotenv) to load environment variables from a `.env` file at startup. The `config()` call in `index.js` runs before the Express app initializes, making all variables available via `process.env`.
+
+## Variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `DATABASE_URL` | Yes | — | PostgreSQL connection string used to initialize the `pg.Pool`. |
+| `PORT` | No | `3000` | Port the HTTP server listens on. |
+
+### `DATABASE_URL`
+
+A full PostgreSQL connection string passed directly to `new pg.Pool({ connectionString: process.env.DATABASE_URL })`. SSL is always enabled regardless of what the connection string specifies — see [Database configuration](/configuration/database) for details.
+
+Format:
+
+```
+postgresql://user:password@host:port/dbname
+```
+
+### `PORT`
+
+The port the Express server binds to. If omitted, the app falls back to `3000`:
+
+```javascript
+const port = process.env.PORT || 3000;
+```
+
+Most cloud platforms (Heroku, Railway, Render) inject `PORT` automatically. You typically only need to set this manually in local development if port `3000` is already in use.
+
+## Example `.env` file
+
+```env
+DATABASE_URL=postgresql://myuser:mypassword@localhost:5432/eventos
+PORT=3000
+```
+
+<Note>
+  Never commit your `.env` file to version control. Add it to `.gitignore` to avoid accidentally exposing database credentials.
+</Note>
+
+## How dotenv loads variables
+
+At the top of `index.js`, the following two lines load environment variables before any other application code runs:
+
+```javascript
+import { config } from 'dotenv'
+
+config()
+```
+
+`config()` reads the `.env` file from the current working directory and populates `process.env`. Variables already present in the environment (e.g. set by the platform) are not overwritten, so platform-injected variables always take precedence over `.env` values.
+
+<Tip>
+  In production deployments, set environment variables directly in your platform's dashboard rather than shipping a `.env` file. The `dotenv` call is a no-op when no `.env` file is found, so the same code works in both environments.
+</Tip>

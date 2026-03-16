@@ -1,0 +1,58 @@
+---
+title: Introduction
+description: A lightweight Node.js/Express REST API that serves event participant data from a PostgreSQL database.
+---
+
+## Overview
+
+Eventos API is a REST API service built with Node.js and Express that provides access to event participant data. It connects to a PostgreSQL database and exposes endpoints for querying participants associated with events hosted at UTMACH.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get the API running locally in minutes
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Explore all available endpoints
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration/environment">
+    Environment variables and settings
+  </Card>
+  <Card title="Deployment" icon="cloud" href="/guides/deployment">
+    Deploy to production
+  </Card>
+</CardGroup>
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card title="Express.js REST API" icon="server">
+    Lightweight HTTP server built on Express 4.x with JSON request/response handling
+  </Card>
+  <Card title="PostgreSQL integration" icon="database">
+    Connection pooling via the `pg` library with SSL support for secure database access
+  </Card>
+  <Card title="CORS protection" icon="shield">
+    Restricted to a single trusted frontend origin to prevent unauthorized cross-origin access
+  </Card>
+  <Card title="Environment-based config" icon="sliders">
+    All secrets and connection strings configured via environment variables using dotenv
+  </Card>
+</CardGroup>
+
+## Technology stack
+
+| Layer | Technology |
+|-------|-----------|
+| Runtime | Node.js 14.x |
+| Framework | Express 4.18.x |
+| Database | PostgreSQL (via `pg` 8.x) |
+| Configuration | dotenv 16.x |
+| CORS | cors 2.8.x |
+
+## How it works
+
+The API starts an Express server that connects to a PostgreSQL database using a connection pool. When a request arrives at `/lista`, the server queries the `Prueba` table and returns all rows as a JSON array. The allowed frontend origin is `https://eventosutmach.000webhostapp.com`.
+
+<Note>
+  The API currently exposes a single endpoint. See the [API Reference](/api-reference/overview) for full details.
+</Note>

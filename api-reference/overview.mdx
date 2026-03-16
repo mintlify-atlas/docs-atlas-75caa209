@@ -1,0 +1,65 @@
+---
+title: API overview
+description: Base URL, authentication, CORS policy, and available endpoints for the Eventos API.
+---
+
+## Base URL
+
+The base URL depends on your deployment environment. When running locally:
+
+```
+http://localhost:3000
+```
+
+In production, replace this with your deployed server's address.
+
+## Authentication
+
+The Eventos API does **not** require authentication. No API keys, tokens, or authorization headers are needed to call any endpoint.
+
+<Note>
+  Access control is enforced through CORS at the browser level, not through authentication tokens. See the CORS section below for details.
+</Note>
+
+## Content-Type
+
+All API responses are returned as `application/json`. You do not need to set an `Accept` header, but you may include one if desired:
+
+```
+Accept: application/json
+```
+
+## CORS policy
+
+The API is configured to allow browser-based requests only from the following origin:
+
+```
+https://eventosutmach.000webhostapp.com
+```
+
+Browser requests from any other origin will be blocked by CORS.
+
+<Note>
+  CORS restrictions apply only to browser clients. Direct server-to-server calls, `curl`, or any non-browser HTTP client can reach the API from any origin without restriction.
+</Note>
+
+## Available endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/lista` | Returns all event participants |
+
+## HTTP status codes
+
+| Status code | Meaning |
+|-------------|----------|
+| `200 OK` | The request succeeded and the response body contains the requested data. |
+| `500 Internal Server Error` | A database error occurred on the server. The response body will contain `{ "error": "Error en el servidor" }`. |
+
+## Example request
+
+The following `curl` command fetches all participants from a locally running instance:
+
+```bash
+curl http://localhost:3000/lista
+```

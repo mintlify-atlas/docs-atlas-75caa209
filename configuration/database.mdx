@@ -1,0 +1,91 @@
+---
+title: Database configuration
+description: Configure the PostgreSQL connection pool and schema for the Eventos API.
+---
+
+The Eventos API uses [node-postgres (`pg`)](https://node-postgres.com/) to connect to a PostgreSQL database. A connection pool is created once at startup and reused across all requests.
+
+## Connection pool
+
+The pool is initialized with the following configuration:
+
+```javascript
+const pool = new pg.Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: true
+})
+```
+
+| Option | Value | Description |
+|---|---|---|
+| `connectionString` | `DATABASE_URL` env var | Full PostgreSQL connection string. See [Environment variables](/configuration/environment). |
+| `ssl` | `true` | Always enabled. Required for most cloud-hosted PostgreSQL providers. |
+| `max` | `10` (default) | Maximum number of clients in the pool. |
+| `idleTimeoutMillis` | `10000` (default) | Milliseconds a client can sit idle before being closed. |
+
+### SSL
+
+SSL is unconditionally enabled by setting `ssl: true`. This is required by cloud-hosted PostgreSQL providers that enforce encrypted connections, including:
+
+- Heroku Postgres
+- Railway
+- Render
+- Supabase
+
+<Warning>
+  If you connect to a local PostgreSQL instance that does not have SSL configured, the connection will fail. For local development without SSL, you can temporarily change `ssl: true` to `ssl: false`, but do not deploy this change to production.
+</Warning>
+
+## Schema
+
+The API queries a single table named `Prueba`, which stores event participant registrations.
+
+### Creating the `Prueba` table
+
+Run the following SQL to create the table:
+
+```sql
+CREATE TABLE Prueba (
+    id     SERIAL PRIMARY KEY,
+    nombre VARCHAR(255),
+    email  VARCHAR(255),
+    evento VARCHAR(255),
+    fecha  TIMESTAMP
+);
+```
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | `SERIAL` | Auto-incrementing primary key. |
+| `nombre` | `VARCHAR(255)` | Full name of the participant. |
+| `email` | `VARCHAR(255)` | Email address of the participant. |
+| `evento` | `VARCHAR(255)` | Name of the event the participant registered for. |
+| `fecha` | `TIMESTAMP` | Date and time of registration. |
+
+<Note>
+  The table name `Prueba` is case-sensitive in PostgreSQL when quoted. The query in the API does not quote the name, so PostgreSQL folds it to lowercase (`prueba`) internally. Ensure your table is created without quotes, or matches the casing used in the query.
+</Note>
+
+## Queries
+
+The `/lista` endpoint fetches all rows from the table:
+
+```javascript
+const getParticipantsQuery = 'SELECT * FROM Prueba';
+const participants = await pool.query(getParticipantsQuery);
+```
+
+The full result set is returned — there is no pagination or filtering. For large datasets, consider adding `LIMIT`/`OFFSET` or a `WHERE` clause.
+
+## Error handling
+
+If the query fails (e.g. connection dropped, table missing), the pool throws and the endpoint catches it:
+
+```javascript
+catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Error en el servidor' });
+}
+```
+
+The error is logged to stdout and the client receives a `500` response with a generic message. Database credentials and stack traces are never exposed to the client.
